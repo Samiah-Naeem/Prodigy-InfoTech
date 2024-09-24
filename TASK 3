@@ -1,0 +1,149 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+warnings.filterwarnings('ignore')
+%matplotlib inline
+
+df = pd.read_csv('C:/Users/hnaee/Downloads/bank-additional.csv', delimiter = ';')
+df.rename(columns = {'y':'deposit'},inplace = True)
+df.head()
+
+
+
+df.tail()
+
+df.shape
+
+df.columns
+
+df.dtypes.value_counts()
+
+df.info()
+
+#Handling Duplicate values
+df.duplicated().sum()
+
+
+#Handling Null/Missing values
+df.isna().sum()
+
+cat_cols = df.select_dtypes(include = 'object').columns
+print(cat_cols)
+num_cols = df.select_dtypes(exclude = 'object').columns
+print(num_cols)
+
+df.describe()
+
+df.describe(include = 'object')
+
+#Visualizing Numerical Columns using Histplot
+df.hist(figsize=(10,10), color = 'purple')
+plt.show()
+
+#Visualizing Categorial Data using Barplot
+
+for feature in cat_cols:
+    plt.figure(figsize=(5,5))
+    sns.countplot(x = feature, data = df, palette = 'rocket')
+    plt.title(f'Bar Plot of {feature}')
+    plt.xlabel(feature)
+    plt.ylabel('Count')
+    plt.xticks(rotation = 90)
+    plt.show()
+
+#Checking for correlation using Correlation PLot
+corr = df.corr()
+print(corr)
+corr = corr[abs(corr) >= 0.90]
+sns.heatmap(corr, annot = True, cmap = 'coolwarm', linewidths = 0.2)
+plt.show()
+
+#Feature selection using Correlation
+
+high_corr_cols = ['emp.var.rate','euribor3m','nr.employed']
+
+df1 = df.copy()
+df1.columns
+
+df1.drop(high_corr_cols,inplace = True,axis = 1)
+df1.columns
+
+df1.shape
+
+#Coversion of catogorial columns into numerical columns using label encoder
+from sklearn.preprocessing import LabelEncoder
+lb = LabelEncoder()
+df_encoded = df1.apply(lb.fit_transform)
+df_encoded
+
+df_encoded['deposit'].value_counts()
+
+#Selecting Independent and Dependent Variables
+
+x = df_encoded.drop('deposit',axis = 1)
+y = df_encoded['deposit']
+print(x.shape)
+print(y.shape)
+print(type(x))
+print(type(y))
+
+from sklearn.model_selection import train_test_split
+
+print(4119*0.25)
+
+x_train,x_test,y_train,y_test = train_test_split(x,y,test_size = 0.25 , random_state = 1)
+print(x_train.shape)
+print(x_test.shape)
+print(y_train.shape)
+print(y_test.shape)
+
+#Function to compute Confusion Matrix,Classification Report and to generate training and testing scores
+
+from sklearn.metrics import confusion_matrix,classification_report,accuracy_score
+
+def eval_model(y_test,y_pred):
+    acc = accuracy_score(y_test,y_pred)
+    print("\nAccuracy Score : ",acc)
+    cm = confusion_matrix(y_test,y_pred)
+    print("\nConfusion Matrix : ",cm)
+    print("\nClassification report\n",classification_report(y_test,y_pred))
+    
+def mscore(model):
+    train_score = model.score(x_train,y_train)
+    test_score = model.score(x_test,y_test)
+    print("\nTraining Score : ",train_score)
+    print("\nTesting Score : ",test_score)
+
+#Importing Decision tree Library
+from sklearn.tree import DecisionTreeClassifier
+
+#Building Decision Tree Classifier Model
+dt = DecisionTreeClassifier(criterion='gini',max_depth=5,min_samples_split=10)
+dt.fit(x_train,y_train)
+
+#Evaluating Training and Testing Accuracy
+mscore(dt)
+
+#Generating Predictions
+ypred_dt = dt.predict(x_test)
+print(ypred_dt)
+
+#Evaluate the Model ---- Confusion Matrix , Classification report , Accuracy
+eval_model(y_test,ypred_dt)
+
+#Plotting Decision Tree
+from sklearn.tree import plot_tree
+
+cn = ['no','yes'] #class names
+fn = x_train.columns #feature names
+print(cn)
+print(fn)
+
+feature_names = df.columns.tolist()
+class_names = ["class_0","class_1"]
+plt.figure(figsize = (30,20))
+plot_tree(dt,feature_names=feature_names,class_names=class_names,filled = True,fontsize = 7)
+plt.show()
+
